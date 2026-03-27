@@ -1,19 +1,19 @@
 @echo off
-REM QWDE Protocol - Simple Build Script
-REM Builds only the essential EXEs:
-REM 1. QWDE_Browser.exe (Main browser with encryption)
-REM 2. QWDE_PyServerDB.exe (Optional local MySQL server with API security)
+REM ═══════════════════════════════════════════════════════════
+REM QWDE Protocol - Complete Build Script
+REM Builds ALL components including Python central server
+REM ═══════════════════════════════════════════════════════════
 
 setlocal enabledelayedexpansion
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════╗
-echo ║        QWDE Protocol - Build System                       ║
+echo ║     QWDE Protocol - Complete Build System                 ║
 echo ╠═══════════════════════════════════════════════════════════╣
 echo ║  Building:                                                ║
 echo ║    1. QWDE_Browser.exe (Main browser)                    ║
-echo ║    2. QWDE_PyServerDB.exe (Optional MySQL server)        ║
-echo ║    3. Website Template (Site packaging)                  ║
+echo ║    2. QWDE_Central_Server.exe (Python DDNS)              ║
+echo ║    3. QWDE_Config_Wizard.exe (Config wizard)             ║
 echo ╚═══════════════════════════════════════════════════════════╝
 echo.
 
@@ -25,21 +25,19 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/6] Installing dependencies...
+echo [1/7] Installing dependencies...
 pip install pyinstaller cryptography requests certifi mysql-connector-python --quiet --disable-pip-version-check
 echo [✓] Dependencies installed
 
 echo.
-echo [2/6] Cleaning previous builds...
+echo [2/7] Cleaning previous builds...
 if exist "build" rmdir /s /q "build"
 if exist "dist" rmdir /s /q "dist"
 if exist "output" rmdir /s /q "output"
 echo [✓] Cleaned
 
 echo.
-echo [3/6] Building QWDE_Browser.exe...
-echo      (This includes the full encryption system)
-
+echo [3/7] Building QWDE_Browser.exe...
 python -m PyInstaller --clean ^
     --name QWDE_Browser ^
     --windowed ^
@@ -49,63 +47,105 @@ python -m PyInstaller --clean ^
     --hidden-import=tkinter ^
     --hidden-import=cryptography ^
     --hidden-import=requests ^
-    --icon=NONE ^
-    --path=. ^
     qwde_browser.py
 
 if exist "dist\QWDE_Browser.exe" (
     mkdir "output\QWDE_Browser"
     move /Y "dist\QWDE_Browser.exe" "output\QWDE_Browser\"
     copy /Y "qwde_config.ini" "output\QWDE_Browser\"
-    if exist "plugins" (
-        xcopy /E /I /Y "plugins" "output\QWDE_Browser\plugins"
-    )
-    echo [✓] QWDE_Browser.exe built successfully
+    if exist "plugins" xcopy /E /I /Y "plugins" "output\QWDE_Browser\plugins"
+    echo [✓] QWDE_Browser.exe built
 ) else (
     echo [✗] Browser build failed!
 )
 
 echo.
-echo [4/6] Building QWDE_PyServerDB.exe...
-echo      (OPTIONAL - Only for hosting your own MySQL server)
-
+echo [4/7] Building QWDE_Central_Server.exe...
 python -m PyInstaller --clean ^
-    --name QWDE_PyServerDB ^
+    --name QWDE_Central_Server ^
     --console ^
     --onefile ^
-    --add-data "setup_mysql_php.sql;." ^
     --add-data "qwde_config.ini;." ^
+    --add-data "setup_central_database.sql;." ^
     --hidden-import=mysql.connector ^
-    --icon=NONE ^
-    --path=. ^
     qwde_mysql_ddns.py
 
-if exist "dist\QWDE_PyServerDB.exe" (
-    mkdir "output\QWDE_PyServerDB"
-    move /Y "dist\QWDE_PyServerDB.exe" "output\QWDE_PyServerDB\"
-    copy /Y "setup_mysql_php.sql" "output\QWDE_PyServerDB\"
-    copy /Y "qwde_config.ini" "output\QWDE_PyServerDB\"
-    echo [✓] QWDE_PyServerDB.exe built successfully
+if exist "dist\QWDE_Central_Server.exe" (
+    mkdir "output\QWDE_Central_Server"
+    move /Y "dist\QWDE_Central_Server.exe" "output\QWDE_Central_Server\"
+    copy /Y "setup_central_database.sql" "output\QWDE_Central_Server\"
+    echo [✓] QWDE_Central_Server.exe built
 ) else (
-    echo [✗] PyServerDB build failed!
+    echo [✗] Central Server build failed!
 )
 
 echo.
-echo [5/6] Creating launcher scripts...
+echo [5/7] Building QWDE_Config_Wizard.exe...
+python -m PyInstaller --clean ^
+    --name QWDE_Config_Wizard ^
+    --windowed ^
+    --onefile ^
+    --hidden-import=tkinter ^
+    --hidden-import=mysql.connector ^
+    qwde_config_wizard.py
+
+if exist "dist\QWDE_Config_Wizard.exe" (
+    mkdir "output\QWDE_Config_Wizard"
+    move /Y "dist\QWDE_Config_Wizard.exe" "output\QWDE_Config_Wizard\"
+    echo [✓] QWDE_Config_Wizard.exe built
+) else (
+    echo [✗] Config Wizard build failed!
+)
+
+echo.
+echo [6/7] Copying scripts and documentation...
+
+mkdir "output\QWDE_Mirror_Server" 2>nul
+copy /Y "qwde_mirror_server.py" "output\QWDE_Mirror_Server\" >nul
+copy /Y "peer_directory_api.php" "output\QWDE_Central_Server\" >nul
+
+mkdir "output\Documentation" 2>nul
+copy /Y "README.md" "output\Documentation\" >nul
+copy /Y "STARTUP_GUIDE.md" "output\Documentation\" >nul
+copy /Y "WEBSITE_CREATION_GUIDE.md" "output\Documentation\" >nul
+copy /Y "SECURE_HTML_VIEWER.md" "output\Documentation\" >nul
+
+echo [✓] Files copied
+
+echo.
+echo [7/7] Creating launcher scripts...
 
 REM Browser launcher
 (
 echo @echo off
 echo cd /d "%%~dp0"
-echo echo.
-echo echo ╔═══════════════════════════════════════════════════════════╗
-echo echo ║         QWDE Browser - Starting...                        ║
-echo echo ╚═══════════════════════════════════════════════════════════╝
-echo echo.
-echo echo Connecting to: https://secupgrade.com
-echo echo.
 echo start QWDE_Browser.exe
 ) > "output\QWDE_Browser\Start.bat"
+
+REM Central Server launcher
+(
+echo @echo off
+echo cd /d "%%~dp0"
+echo echo.
+echo echo ╔═══════════════════════════════════════════════════════════╗
+echo echo ║  QWDE Central DDNS Server - Python Backend               ║
+echo echo ╠═══════════════════════════════════════════════════════════╣
+echo echo ║  Stores: Peer IPs, Site Metadata, Ownership Tokens       ║
+echo echo ║  NOT stored: Site content (stored on peer computers)     ║
+echo echo ╚═══════════════════════════════════════════════════════════╝
+echo echo.
+echo echo Starting central server on port 8765...
+echo echo Press Ctrl+C to stop
+echo echo.
+echo QWDE_Central_Server.exe --server
+) > "output\QWDE_Central_Server\Start.bat"
+
+REM Config Wizard launcher
+(
+echo @echo off
+echo cd /d "%%~dp0"
+echo start QWDE_Config_Wizard.exe
+) > "output\QWDE_Config_Wizard\Start.bat"
 
 REM Mirror Server launcher
 (
@@ -113,73 +153,66 @@ echo @echo off
 echo cd /d "%%~dp0"
 echo echo.
 echo echo ╔═══════════════════════════════════════════════════════════╗
-echo echo ║     QWDE Mirror Server - Full Backup                      ║
+echo echo ║  QWDE Mirror Server - Full Site Backup                    ║
 echo echo ╠═══════════════════════════════════════════════════════════╣
 echo echo ║  Downloads ALL sites from ALL peers                      ║
 echo echo ║  Auto-updates every 60 seconds                           ║
+echo echo ║  Purges deleted sites from cache                         ║
 echo echo ╚═══════════════════════════════════════════════════════════╝
 echo echo.
-echo python ..\qwde_mirror_server.py
-) > "output\QWDE_PyServerDB\Start_Mirror.bat"
+echo python qwde_mirror_server.py
+) > "output\QWDE_Mirror_Server\Start.bat"
+
+REM Master launcher
+(
+echo @echo off
+echo echo.
+echo echo ╔═══════════════════════════════════════════════════════════╗
+echo echo ║     QWDE Protocol - Quick Start                           ║
+echo echo ╚═══════════════════════════════════════════════════════════╝
+echo echo.
+echo echo Select an option:
+echo echo.
+echo echo 1. Start Browser
+echo echo 2. Start Central Server
+echo echo 3. Start Mirror Server
+echo echo 4. Open Config Wizard
+echo echo 5. Exit
+echo echo.
+echo set /p choice="Enter choice (1-5): "
+echo.
+echo if "%%choice%%"=="1" start QWDE_Browser\QWDE_Browser.exe
+echo if "%%choice%%"=="2" start cmd /k "cd QWDE_Central_Server ^&^& QWDE_Central_Server.exe --server"
+echo if "%%choice%%"=="3" start cmd /k "cd QWDE_Mirror_Server ^&^& python qwde_mirror_server.py"
+echo if "%%choice%%"=="4" start QWDE_Config_Wizard\QWDE_Config_Wizard.exe
+echo if "%%choice%%"=="5" exit /b
+) > "start.bat"
 
 echo [✓] Launcher scripts created
 
-echo.
-echo [6/6] Copying scripts and SQL...
-
-REM Copy SQL and utility scripts to output
-copy /Y "setup_central_database.sql" "output\" >nul
-copy /Y "run_all.bat" "output\" >nul
-copy /Y "quick_start.bat" "output\" >nul
-copy /Y "qwde_mirror_server.py" "output\" >nul
-copy /Y "setup_central_database.sql" "output\QWDE_PyServerDB\" >nul
-echo [✓] Scripts copied
-
-mkdir "output\Documentation" 2>nul
-copy /Y "README.md" "output\Documentation\" >nul
-copy /Y "DEPLOYMENT.md" "output\Documentation\" >nul 2>nul
-copy /Y "server_config.ini" "output\Documentation\" >nul 2>nul
-echo [✓] Documentation copied
-
 REM Cleanup
-echo.
-echo Cleaning up...
 rmdir /s /q "build" 2>nul
-rmdir /s /q "dist" 2>nul
 
 echo.
 echo ╔═══════════════════════════════════════════════════════════╗
-echo ║              BUILD COMPLETE!                              ║
+echo ║           BUILD COMPLETE!                                 ║
 echo ╠═══════════════════════════════════════════════════════════╣
-echo ║  Output folder: output\                                   ║
+echo ║  Output: output\                                          ║
 echo ║                                                           ║
 echo ║  QWDE_Browser\                                            ║
-echo ║    └─ QWDE_Browser.exe      [MAIN APPLICATION]           ║
-echo ║       - Full browser GUI                                  ║
-echo ║       - Site Creator                                      ║
-echo ║       - Plugin System                                     ║
-echo ║       - QWDE Encryption (RSA+AES+Rolling)                ║
-echo ║       - Network Health Map                                ║
-echo ║       - Connects to: https://secupgrade.com              ║
+echo ║    └─ QWDE_Browser.exe          [Main Browser]           ║
 echo ║                                                           ║
-echo ║  QWDE_PyServerDB\                                         ║
-echo ║    └─ QWDE_PyServerDB.exe   [OPTIONAL]                   ║
-echo ║       - Local MySQL server                                ║
-echo ║       - ONLY needed if hosting own central server         ║
-echo ║       - NOT needed if using secupgrade.com                ║
+echo ║  QWDE_Central_Server\                                     ║
+echo ║    └─ QWDE_Central_Server.exe   [Python DDNS Server]     ║
 echo ║                                                           ║
-echo ║  Quick Start:                                             ║
-echo ║    1. Go to output\QWDE_Browser\                          ║
-echo ║    2. Run Start.bat or QWDE_Browser.exe                   ║
-echo ║    3. Click "Create Site" to make websites                ║
-echo ║    4. Publish to secupgrade.com                           ║
+echo ║  QWDE_Config_Wizard\                                      ║
+echo ║    └─ QWDE_Config_Wizard.exe    [Config Wizard]          ║
+echo ║                                                           ║
+echo ║  QWDE_Mirror_Server\                                      ║
+echo ║    └─ qwde_mirror_server.py     [Mirror Server Script]   ║
+echo ║                                                           ║
+echo ║  Quick Start: start.bat                                   ║
 echo ╚═══════════════════════════════════════════════════════════╝
-echo.
-
-REM Show built files
-echo Built files:
-echo.
-dir /s /b output\*.exe 2>nul
 echo.
 
 pause

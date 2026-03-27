@@ -1,31 +1,72 @@
-# QWDE Protocol - Complete Decentralized Web System
+# QWDE Protocol v3.0 - Complete Decentralized Web System
 
-**Version:** 3.0 (GCM-Enhanced with Ownership Tokens)  
+**Status:** ✅ Production Ready  
 **Last Updated:** 2026-03-27  
-**Status:** ✅ Production Ready
+**Build:** Complete with Config Wizard
 
 ## Overview
 
-QWDE (pronounced "quade") is a decentralized web protocol with:
+QWDE (pronounced "quade") is a complete decentralized web protocol featuring:
+
 - **Custom encryption** (HMAC + AES-GCM + QWDE custom algorithm)
 - **Peer-to-peer site hosting** (sites stored on peer computers)
-- **Central directory** (secupgrade.com - metadata only, NOT content)
-- **Full mirror backup** (optional server downloads all sites)
-- **Ownership tokens** (secure site deletion)
-- **Cache invalidation** (all clients purge deleted sites)
+- **Central directory** (metadata only - NOT content)
+- **Full mirror backup** (downloads all sites for offline access)
+- **Ownership tokens** (secure site deletion with cache invalidation)
+- **Secure HTML viewer** (source-first rendering for security)
+- **Plugin system** (extend browser functionality)
+- **Configuration wizard** (easy setup for all components)
+
+## Quick Start
+
+### Option 1: Use Config Wizard (Recommended for First Time)
+
+```bash
+cd output\QWDE_Config_Wizard
+QWDE_Config_Wizard.exe
+```
+
+**Wizard guides you through:**
+1. Central server configuration
+2. Database setup
+3. Browser settings
+4. Mirror server configuration
+5. Security settings
+
+### Option 2: Quick Start (Default Settings)
+
+```bash
+start.bat
+# Select option 1 (Browser)
+```
+
+### Option 3: Manual Start
+
+```bash
+# Browser
+cd output\QWDE_Browser
+QWDE_Browser.exe
+
+# Mirror Server (optional)
+cd output\QWDE_Mirror_Server
+python qwde_mirror_server.py
+```
 
 ## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  CENTRAL DIRECTORY (secupgrade.com)                            │
+│  CENTRAL DIRECTORY (secupgrade.com or your server)             │
 │  ┌───────────────────────────────────────────────────────────┐ │
-│  │  peer_directory_api.php                                   │ │
+│  │  peer_directory_api.php OR QWDE_Central_Server.exe       │ │
+│  │                                                           │ │
 │  │  Stores ONLY:                                             │ │
 │  │  • Peer IP addresses and ports                           │ │
 │  │  • Site metadata (domain, fwild, creator)                │ │
 │  │  • Ownership tokens (for deletion)                       │ │
 │  │  • Site hashes (for update detection)                    │ │
+│  │  • Cache invalidation records                            │ │
+│  │                                                           │ │
 │  │  ✗ Does NOT store site content                           │ │
 │  └───────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -33,11 +74,12 @@ QWDE (pronounced "quade") is a decentralized web protocol with:
          │ HTTPS API calls
          │
 ┌────────▼────────────────────────────────────────────────────────┐
-│  OPTIONAL MIRROR SERVER                                        │
+│  MIRROR SERVER (Optional - Full Backup)                        │
 │  ┌───────────────────────────────────────────────────────────┐ │
 │  │  • Downloads ALL sites from ALL peers                    │ │
-│  │  • Full local backup                                     │ │
+│  │  • Stores full copy locally                              │ │
 │  │  • Detects updates (hash/size/version)                   │ │
+│  │  • Auto-purges deleted sites from cache                  │ │
 │  │  • Serves when peers offline                             │ │
 │  └───────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -48,54 +90,61 @@ QWDE (pronounced "quade") is a decentralized web protocol with:
 │  PEERS (User Computers)                                        │
 │  ┌───────────────────────────────────────────────────────────┐ │
 │  │  QWDE_Browser.exe                                         │ │
-│  │  • Creates sites (stored locally)                        │ │
+│  │  • Creates sites (stored locally on peer computer)       │ │
 │  │  • Serves sites via P2P (port 8766)                      │ │
 │  │  • Registers metadata with central directory             │ │
-│  │  • Ownership tokens for deletion                         │ │
+│  │  • Ownership tokens for secure deletion                  │ │
+│  │  • Secure HTML viewer (source-first)                     │ │
+│  │  • Plugin system support                                 │ │
 │  └───────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+## Build Output Structure
 
-### Option 1: Quick Start (Testing)
-
-```bash
-quick_start.bat
 ```
-
-**Starts:**
-- ✓ QWDE Browser
-- ✓ Mirror Server
-
-### Option 2: Full Startup
-
-```bash
-run_all.bat
-```
-
-**Prompts for:**
-1. Database setup (MySQL)
-2. Start local central server (optional)
-3. Start mirror server (optional)
-4. Starts browser automatically
-
-### Option 3: Manual
-
-```bash
-# 1. Build (if not built)
-build_all.bat
-
-# 2. Start browser
-cd output\QWDE_Browser
-QWDE_Browser.exe
-
-# 3. Start mirror (optional)
-cd output
-python qwde_mirror_server.py
+output/
+├── QWDE_Browser/
+│   ├── QWDE_Browser.exe         ← Main browser
+│   ├── Start.bat                ← Quick launcher
+│   └── qwde_config.ini          ← Browser config
+│
+├── QWDE_Central_Server/
+│   ├── QWDE_Central_Server.exe  ← Python DDNS server
+│   ├── Start.bat                ← Launcher
+│   ├── peer_directory_api.php   ← PHP alternative
+│   └── setup_central_database.sql
+│
+├── QWDE_Config_Wizard/
+│   ├── QWDE_Config_Wizard.exe   ← Configuration wizard
+│   └── Start.bat                ← Launcher
+│
+├── QWDE_Mirror_Server/
+│   ├── qwde_mirror_server.py    ← Mirror server script
+│   └── Start.bat                ← Launcher
+│
+├── Documentation/
+│   ├── README.md
+│   ├── STARTUP_GUIDE.md
+│   ├── WEBSITE_CREATION_GUIDE.md
+│   ├── SECURE_HTML_VIEWER.md
+│   └── ...
+│
+└── start.bat                     ← Master launcher
 ```
 
 ## Features
+
+### 🔐 Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **Three-Layer Encryption** | QWDE custom + AES-GCM + HMAC |
+| **Secure HTML Viewer** | Shows source first, then render |
+| **Ownership Tokens** | Required for site deletion |
+| **Cache Invalidation** | Auto-purge deleted sites |
+| **HTTPS-Only Mode** | Block unencrypted connections |
+| **Certificate Verification** | Validate SSL certificates |
 
 ### 🌐 Content Support
 
@@ -106,593 +155,173 @@ python qwde_mirror_server.py
 - ✅ Encrypted QWDE sites
 - ✅ Binary files (hex view)
 
-**Secure HTML Rendering Engine** (like C# WebView)
-- **Source-First Security** - Shows code before rendering
-- **Security Confirmation** - Must confirm before rendering
-- **Toggle Anytime** - Switch between source/render
-- **PyQt5 WebEngine** - Full HTML5/CSS3/JS support
-- **pywebview** - Cross-platform alternative
-- **External Browser** - Fallback option
-
-**Install HTML Rendering:**
-```bash
-# Best option (like C# WebView)
-pip install PyQt5 PyQtWebEngine
-
-# Alternative
-pip install pywebview
-```
-
-**Security Features:**
-1. ✓ Shows HTML source first
-2. ✓ User reviews code for security
-3. ✓ Confirmation dialog before rendering
-4. ✓ Can toggle back to source anytime
-5. ✓ External browser option
-
 **HTTP/HTTPS**
 - ✅ View source code
 - ✅ Download text files
 - ✅ Secure HTML viewer (if HTML detected)
-- ❌ No JavaScript execution (by default)
-- ❌ No auto-rendering (security)
 
-**Local Files**
-- ✅ Open any text file
-- ✅ Export sites to standard web format
-- ✅ Import standard HTML
+### 🔌 Plugin System
 
-**See:** 
-- [WEBSITE_CREATION_GUIDE.md](WEBSITE_CREATION_GUIDE.md) - How to create sites
-- [SUPPORTED_FILE_TYPES.md](SUPPORTED_FILE_TYPES.md) - Complete file support
-- [qwde_secure_html_viewer.py](qwde_secure_html_viewer.py) - Secure viewer source
+**Built-in Plugins:**
+- Script Blocker - Blocks JavaScript
+- Ad Blocker - Blocks ads & trackers
+- Privacy Guard - Privacy enhancements
+- Dark Mode - Forces dark theme
 
-### 🔐 Three-Layer Encryption
-
-1. **QWDE Custom Algorithm**
-   - Wave diffusion
-   - Temporal key stretching
-   - Security-modulated XOR
-   - 4-quadrant encryption
-
-2. **AES-GCM (Per Quadrant)**
-   - Authenticated encryption
-   - 128-bit authentication tags
-   - No padding oracle attacks
-
-3. **AES-GCM (Outer Layer)**
-   - Protects entire payload
-   - Associated data authentication
-
-4. **HMAC-SHA256**
-   - Message integrity verification
-   - Tamper detection before decryption
-
-### 🗑️ Site Deletion with Ownership Tokens
-
-- **Token Generation:** Created when site is registered
-- **Token Storage:** Local + central directory
-- **Deletion:** Requires valid ownership token
-- **Cache Invalidation:** All clients purge deleted sites
-
-### 🔄 Update Detection
-
-- **Hash Changes:** Content modified
-- **Size Changes:** Bytes added/removed
-- **Version Changes:** Creator increments version
-- **Auto-Detection:** Mirror checks every 60 seconds
-
-### 🌐 Peer-to-Peer Distribution
-
-- **Sites stored on peer computers** (NOT central server)
-- **Direct P2P downloads** between peers
-- **Central directory** only stores metadata
-- **Mirror server** for backup/offline access
-
-## File Structure
-
-```
-qwde_protocol/
-├── Core System
-│   ├── qwde_browser.py              # Main browser GUI
-│   ├── qwde_peer_network.py         # P2P networking
-│   ├── qwde_encryption.py           # Encryption layer
-│   ├── qwde_enhanced_encryption.py  # HMAC + AES-GCM encryption
-│   ├── improved_qwde.py             # Original QWDE encryption
-│   └── qwde_protocol_handler.py     # Protocol customization
-│
-├── Server Components
-│   ├── peer_directory_api.php       # Central directory (upload to secupgrade.com)
-│   ├── qwde_mirror_server.py        # Full mirror server
-│   └── qwde_ownership_tokens.py     # Token management
-│
-├── Site Management
-│   ├── qwde_site_packager.py        # Export to website folders
-│   ├── qwde_delete_site.py          # Deletion dialog
-│   └── website_template/            # Website export template
-│
-├── Build & Startup
-│   ├── build_all.bat                # Build EXEs
-│   ├── run_all.bat                  # Start all components
-│   ├── quick_start.bat              # Quick startup
-│   └── setup_central_database.sql   # Database setup
-│
-├── Configuration
-│   ├── qwde_config.ini              # Client config
-│   └── server_config.ini            # Server config
-│
-└── Documentation
-    ├── README.md                    # This file
-    ├── STARTUP_GUIDE.md             # Startup instructions
-    ├── FINAL_ARCHITECTURE.md        # System architecture
-    ├── ENHANCED_ENCRYPTION_GUIDE.md # Encryption docs
-    ├── DELETION_SYSTEM.md           # Deletion docs
-    └── COMPLETE_SYSTEM.md           # Complete summary
-```
-
-## Build Output
-
-```
-output/
-├── QWDE_Browser/
-│   ├── QWDE_Browser.exe         # Main browser
-│   ├── Start.bat                # Quick launcher
-│   └── qwde_config.ini          # Client config
-│
-├── QWDE_PyServerDB/
-│   ├── QWDE_PyServerDB.exe      # Local server (optional)
-│   ├── Start_Mirror.bat         # Mirror launcher
-│   └── setup_central_database.sql
-│
-├── Documentation/
-│   └── README.md
-│
-├── setup_central_database.sql   # Database setup
-├── run_all.bat                  # Start all
-├── quick_start.bat              # Quick start
-└── qwde_mirror_server.py        # Mirror source
-```
-
-## Configuration
-
-### Client Config (qwde_config.ini)
-
-```ini
-[protocol]
-# Customizable protocol prefix
-protocol_prefix = qwde
-protocol_separator = ://
-# Result: qwde://
-
-[central_server]
-# Central directory URL
-url = https://secupgrade.com/api_handler.php
-
-[security]
-https_only = True
-verify_certificates = True
-```
-
-### Server Config (peer_directory_api.php)
-
-```php
-$db_config = [
-    'host' => 'localhost',
-    'database' => 'qwde_directory',
-    'username' => 'qwede_user',
-    'password' => 'YOUR_ROOT_PASSWORD'  // ← Set this
-];
-```
-
-## API Endpoints
-
-### Central Directory (peer_directory_api.php)
-
-| Action | Method | Description |
-|--------|--------|-------------|
-| `register_peer` | POST | Register peer IP |
-| `get_peers` | GET | Get peer list |
-| `register_site` | POST | Register site metadata |
-| `get_site` | GET | Get site metadata |
-| `get_site_by_fwild` | GET | Get by fwild number |
-| `sync_sites` | GET | Get all metadata |
-| `get_stats` | GET | Get statistics |
-| `delete_site` | POST | Delete site (requires token) |
-| `get_owned_sites` | GET | Get sites owned by peer |
-| `get_invalidations` | GET | Get cache invalidations |
-| `store_invalidation` | POST | Store invalidation message |
-
-### Mirror Server (qwede_mirror_server.py)
-
-| Action | Method | Description |
-|--------|--------|-------------|
-| `get_site` | GET/POST | Get site content |
-| `sync_sites` | GET | Get all sites |
-| `check_update` | GET | Check for updates |
-| `get_stats` | GET | Get mirror stats |
-
-## Database Schema
-
-### Tables
-
-```sql
--- Peer registry
-peers (
-    peer_id, peer_ip, peer_port,
-    public_key, last_seen, is_online
-)
-
--- Site metadata (NOT content)
-site_directory (
-    id, domain, fwild, creator_peer_id,
-    ownership_token, site_hash, site_size,
-    version, is_active, created_at, updated_at
-)
-
--- Peer-site mapping
-peer_sites (
-    peer_id, domain, is_primary, last_sync
-)
-
--- Deletion log
-deletion_log (
-    id, domain, deleted_by, deleted_at, reason
-)
-
--- Cache invalidations
-cache_invalidations (
-    id, domain, fwild, deleted_at, signature, broadcast_at
-)
-
--- Statistics
-system_stats (
-    stat_name, stat_value, updated_at
-)
-```
-
-## Usage Examples
-
-### Create Site
-
-**Using Browser GUI:**
-
-1. Click "Create Site" button (or Ctrl+N)
-2. Write your HTML content
-3. Enter domain name (e.g., `mysite`)
-4. Enable encryption (recommended)
-5. Click "Publish"
-
-**Example HTML:**
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My QWDE Site</title>
-    <style>
-        body { background: #1a1a2e; color: #00ff88; }
-        h1 { color: #00ff88; }
-    </style>
-</head>
-<body>
-    <h1>Welcome to My QWDE Site!</h1>
-    <p>Hosted on the decentralized web.</p>
-</body>
-</html>
-```
-
-**Programmatically:**
-```python
-from qwde_peer_network import create_peer
-
-peer = create_peer()
-result = peer.register_site(
-    domain='mysite.qwde',
-    site_data=b'<h1>Hello QWDE!</h1>'
-)
-print(f"Created: fwild={result['fwild']}")
-```
-
-**See:** [WEBSITE_CREATION_GUIDE.md](WEBSITE_CREATION_GUIDE.md) for complete guide with templates.
-
-### Browse Site
-
-```
-# In browser URL bar:
-qwde://mysite.qwde
-
-# Or by fwild:
-qwde://fwild:42
-```
-
-### Delete Site
-
-```python
-# In browser: File → Delete My Site (Ctrl+D)
-# Or programmatically:
-
-from qwde_ownership_tokens import OwnershipTokenManager
-
-token_manager = OwnershipTokenManager(peer_id='peer-123')
-token_data = token_manager.get_ownership_token('mysite.qwde')
-
-# Create deletion request
-request = {
-    'action': 'delete_site',
-    'domain': 'mysite.qwde',
-    'peer_id': 'peer-123',
-    'ownership_token': token_data['token'],
-    'timestamp': int(time.time()),
-    'signature': '...'
-}
-
-# Send to central API
-requests.post(
-    'https://secupgrade.com/api_handler.php',
-    data=request
-)
-```
-
-### Create Plugin
-
-Plugins extend browser functionality. Drop `.py` files in `plugins/` folder.
-
-**Basic Plugin Template:**
-
+**Create Custom Plugins:**
 ```python
 from qwde_browser import QWDEPlugin
 
 class MyPlugin(QWDEPlugin):
     name = "My Plugin"
     version = "1.0.0"
-    description = "Does something cool"
-    author = "Your Name"
     
-    def on_enable(self):
-        """Called when plugin is enabled"""
-        self.enabled = True
-        print("Plugin enabled!")
-    
-    def on_disable(self):
-        """Called when plugin is disabled"""
-        self.enabled = False
-        print("Plugin disabled")
-    
-    def on_page_load(self, url: str, content: str) -> str:
-        """Modify page content before display"""
-        if not self.enabled:
-            return content
-        
-        # Example: Add custom CSS
-        if '<head>' in content:
-            content = content.replace(
-                '<head>',
-                '<head><style>body { background: #000; }</style>'
-            )
-        
+    def on_page_load(self, url, content):
+        # Modify content
         return content
     
-    def on_request(self, url: str) -> bool:
-        """Block/allow URL requests"""
-        if not self.enabled:
-            return True
-        
-        # Example: Block specific domains
-        if 'ads.example.com' in url:
-            return False  # Block
-        
-        return True  # Allow
-    
-    def get_settings_ui(self, parent):
-        """Create settings panel (optional)"""
-        import tkinter as tk
-        from tkinter import ttk
-        
-        frame = ttk.LabelFrame(parent, text="My Plugin Settings")
-        
-        ttk.Checkbutton(
-            frame,
-            text="Enable Feature X",
-            command=self._toggle_feature
-        ).pack(padx=5, pady=2)
-        
-        return frame
-    
-    def _toggle_feature(self):
-        """Toggle feature setting"""
-        # Your code here
-        pass
+    def on_request(self, url):
+        # Block/allow requests
+        return True
 ```
 
-**Example: Custom CSS Injector Plugin**
+### 🗑️ Site Deletion with Cache Invalidation
 
-```python
-# Save as: plugins/css_injector.py
-from qwde_browser import QWDEPlugin
-import tkinter as tk
-from tkinter import ttk
-
-class CSSInjectorPlugin(QWDEPlugin):
-    name = "CSS Injector"
-    version = "1.0.0"
-    description = "Inject custom CSS into websites"
-    author = "Your Name"
-    
-    def __init__(self, browser):
-        super().__init__(browser)
-        self.custom_css = "body { font-family: Arial; }"
-    
-    def on_page_load(self, url: str, content: str) -> str:
-        if not self.enabled or not content.strip().startswith('<'):
-            return content
-        
-        # Inject CSS before </head>
-        css_tag = f"<style>{self.custom_css}</style>"
-        
-        if '</head>' in content:
-            content = content.replace('</head>', css_tag + '</head>')
-        else:
-            content = css_tag + content
-        
-        return content
-    
-    def get_settings_ui(self, parent):
-        frame = ttk.LabelFrame(parent, text="Custom CSS")
-        
-        ttk.Label(frame, text="CSS Code:").pack(padx=5, pady=2)
-        
-        self.css_text = tk.Text(frame, height=10, width=50)
-        self.css_text.insert('1.0', self.custom_css)
-        self.css_text.pack(padx=5, pady=5)
-        
-        def save():
-            self.custom_css = self.css_text.get('1.0', tk.END)
-        
-        ttk.Button(frame, text="Save", command=save).pack(pady=5)
-        
-        return frame
+**Deletion Flow:**
+```
+Site Owner
+    │
+    ├─► Requests deletion with ownership token
+    │
+    ▼
+Central Directory
+    │
+    ├─► Verifies ownership token
+    ├─► Marks site as deleted
+    └─► Broadcasts cache invalidation
+    │
+    ▼
+All Clients & Mirror Servers
+    │
+    ├─► Receive invalidation message
+    ├─► Purge site from cache
+    └─► Confirm deletion
 ```
 
-**Example: Request Logger Plugin**
+**Cache Invalidation:**
+- ✅ Automatic purge on deletion
+- ✅ Polling every 30 seconds
+- ✅ Signature verification
+- ✅ All clients synchronized
 
-```python
-# Save as: plugins/request_logger.py
-from qwde_browser import QWDEPlugin
-import logging
-from datetime import datetime
+### 🖥️ Secure HTML Viewer
 
-class RequestLoggerPlugin(QWDEPlugin):
-    name = "Request Logger"
-    version = "1.0.0"
-    description = "Log all HTTP requests"
-    author = "Your Name"
-    
-    def __init__(self, browser):
-        super().__init__(browser)
-        self.log_file = 'request_log.txt'
-    
-    def on_request(self, url: str) -> bool:
-        # Log all requests
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        with open(self.log_file, 'a') as f:
-            f.write(f"[{timestamp}] {url}\n")
-        
-        return True  # Allow all
-    
-    def get_settings_ui(self, parent):
-        frame = ttk.LabelFrame(parent, text="Request Logger")
-        
-        ttk.Label(frame, text=f"Logging to: {self.log_file}").pack(padx=5, pady=2)
-        
-        def clear_log():
-            open(self.log_file, 'w').close()
-        
-        ttk.Button(frame, text="Clear Log", command=clear_log).pack(pady=5)
-        
-        return frame
+**Security Flow:**
+```
+1. HTML Loaded
+   ↓
+2. Shows Source Code (user reviews)
+   ↓
+3. User Clicks "Render HTML"
+   ↓
+4. Security Warning Dialog
+   ↓
+5. User Confirms
+   ↓
+6. HTML Rendered
 ```
 
-**Plugin Development Tips:**
+**Features:**
+- Source code shown first
+- Security confirmation required
+- Toggle between source/render
+- External browser option
 
-1. **Inherit from QWDEPlugin** - Required base class
-2. **Set name/version/description** - Required metadata
-3. **Implement on_enable/on_disable** - For state management
-4. **Use on_page_load** - To modify content
-5. **Use on_request** - To block/allow URLs
-6. **Add get_settings_ui** - For user configuration
-7. **Test thoroughly** - Plugins have full browser access
-8. **Handle errors** - Don't crash the browser
+## Configuration
 
-**Plugin API Reference:**
+### Using Config Wizard
 
-| Method | Purpose | Returns |
-|--------|---------|---------|
-| `on_enable()` | Called when enabled | None |
-| `on_disable()` | Called when disabled | None |
-| `on_page_load(url, content)` | Modify page content | Modified content (str) |
-| `on_request(url)` | Block/allow request | bool (True=allow) |
-| `get_settings_ui(parent)` | Create settings panel | tk.Widget |
-| `save_settings(settings)` | Save plugin settings | None |
-| `load_settings()` | Load plugin settings | dict |
-
-**Access Browser:**
-```python
-self.browser  # Access to main browser instance
-self.browser.peer  # Access to peer network
-self.browser.plugin_manager  # Access to plugin manager
+```bash
+cd output\QWDE_Config_Wizard
+QWDE_Config_Wizard.exe
 ```
 
-### Enhanced Encryption
+**Wizard configures:**
+1. Central server (secupgrade.com or self-hosted)
+2. MySQL database connection
+3. Browser settings (protocol, HTML rendering)
+4. Mirror server (port, sync intervals)
+5. Security (HTTPS, certificates, tokens)
 
-```python
-from qwde_enhanced_encryption import EnhancedQWDEEncryption
+### Manual Configuration
 
-encryptor = EnhancedQWDEEncryption(hmac_key=os.urandom(32))
+Edit `qwde_config.ini`:
 
-# Encrypt (3 layers: QWDE + AES-GCM + HMAC)
-encrypted = encryptor.encrypt(b"Secret message")
+```ini
+[central_server]
+protocol = https
+host = secupgrade.com
+port = 443
+api_path = /peer_directory_api.php
 
-# Decrypt (verifies all authentication)
-decrypted = encryptor.decrypt(encrypted)
+[mysql]
+host = localhost
+port = 3306
+database = qwde_directory
+user = qwede_user
+password = your_password
+
+[protocol]
+protocol_prefix = qwde
+protocol_separator = ://
+
+[security]
+https_only = True
+verify_certificates = True
+token_expiry = 5
+auto_invalidate = True
+invalidation_poll = 30
+
+[mirror]
+enabled = True
+port = 8765
+sync_interval = 30
+update_interval = 60
+cache_purge = True
 ```
-
-## Security Features
-
-### Encryption Layers
-
-1. **QWDE Custom** - Proprietary algorithm with mathematical parameters
-2. **AES-GCM (Quadrants)** - Authenticated encryption per quadrant
-3. **AES-GCM (Outer)** - Full payload protection
-4. **HMAC-SHA256** - Message integrity verification
-
-### Ownership Verification
-
-- **Token Generation:** SHA-256(domain:peer:timestamp:hash + secret)
-- **Token Storage:** Local + central directory
-- **Deletion:** Requires valid token + signature
-- **Expiry:** Tokens expire after 5 minutes (replay protection)
-
-### Cache Invalidation
-
-- **Broadcast:** Central server broadcasts deletions
-- **Polling:** Clients check every 30 seconds
-- **Purge:** All clients remove from cache
-- **Verification:** Signature verification required
 
 ## Deployment
 
 ### Central Directory (secupgrade.com)
 
-1. **Upload PHP file:**
-   ```bash
-   scp peer_directory_api.php user@secupgrade.com:/var/www/html/
-   ```
+**Option 1: PHP Backend**
+```bash
+# Upload to secupgrade.com
+scp peer_directory_api.php user@secupgrade.com:/var/www/html/
 
-2. **Setup database:**
-   ```bash
-   mysql -u root -p < setup_central_database.sql
-   ```
+# Setup database
+mysql -u root -p < setup_central_database.sql
+```
 
-3. **Configure:**
-   Edit `peer_directory_api.php` with database credentials
+**Option 2: Python Backend**
+```bash
+# Run Python central server
+cd output\QWDE_Central_Server
+QWDE_Central_Server.exe --server
+```
 
-4. **Test:**
-   ```bash
-   curl https://secupgrade.com/api_handler.php?action=get_stats
-   ```
-
-### Mirror Server (Optional)
+### Mirror Server
 
 ```bash
-cd output
-python qwede_mirror_server.py
+cd output\QWDE_Mirror_Server
+python qwde_mirror_server.py
 ```
 
 **Features:**
-- Downloads all sites from all peers
+- Downloads ALL sites from ALL peers
 - Checks for updates every 60 seconds
+- Auto-purges deleted sites
 - Serves clients when peers offline
-- Auto-updates cached sites
 
 ### Client Distribution
 
@@ -704,6 +333,100 @@ build_all.bat
 output/QWDE_Browser/QWDE_Browser.exe
 ```
 
+## Usage Examples
+
+### Create Site
+
+```bash
+# 1. Open Browser
+QWDE_Browser.exe
+
+# 2. Click "Create Site" (Ctrl+N)
+
+# 3. Write HTML
+<!DOCTYPE html>
+<html>
+<head><title>My Site</title></head>
+<body><h1>Hello QWDE!</h1></body>
+</html>
+
+# 4. Enter domain: mysite
+# 5. Enable encryption ✓
+# 6. Click "Publish"
+```
+
+### Delete Site
+
+```bash
+# In Browser:
+# File → Delete My Site (Ctrl+D)
+
+# Select site → Confirm deletion
+# Site purged from all caches
+```
+
+### Configure with Wizard
+
+```bash
+cd output\QWDE_Config_Wizard
+QWDE_Config_Wizard.exe
+
+# Follow wizard steps:
+# 1. Central Server
+# 2. Database
+# 3. Browser
+# 4. Mirror Server
+# 5. Security
+# 6. Review & Save
+```
+
+## API Endpoints
+
+### Central Directory
+
+| Action | Method | Description |
+|--------|--------|-------------|
+| `register_peer` | POST | Register peer IP |
+| `get_peers` | GET | Get peer list |
+| `register_site` | POST | Register site metadata |
+| `get_site` | GET | Get site metadata |
+| `delete_site` | POST | Delete site (requires token) |
+| `get_invalidations` | GET | Get cache invalidations |
+| `get_stats` | GET | Get statistics |
+
+### Mirror Server
+
+| Action | Method | Description |
+|--------|--------|-------------|
+| `get_site` | GET | Get site content |
+| `sync_sites` | GET | Get all sites |
+| `check_update` | GET | Check for updates |
+| `get_stats` | GET | Get mirror stats |
+
+## Database Schema
+
+```sql
+-- Peer registry
+peers (peer_id, peer_ip, peer_port, public_key, last_seen, is_online)
+
+-- Site metadata (NOT content)
+site_directory (
+    id, domain, fwild, creator_peer_id,
+    ownership_token, site_hash, site_size,
+    version, is_active, created_at, updated_at
+)
+
+-- Cache invalidations
+cache_invalidations (
+    id, domain, fwild, deleted_at, signature, broadcast_at
+)
+
+-- Deletion log
+deletion_log (
+    id, domain, deleted_by, deleted_at, reason
+)
+```
+
 ## Troubleshooting
 
 ### Build Fails
@@ -713,61 +436,84 @@ output/QWDE_Browser/QWDE_Browser.exe
 pip install -r requirements.txt
 
 # Clean build
-pyinstaller --clean qwde_browser.spec
+build_all.bat
 ```
 
 ### Database Connection Failed
 
 ```bash
-# Check MySQL running
-net start MySQL
+# Test connection
+mysql -u qwede_user -p -e "USE qwede_directory; SELECT 1;"
 
 # Recreate database
 mysql -u root -p < setup_central_database.sql
 ```
 
-### Site Not Loading
+### Site Not Purged from Cache
 
-1. Check peer is online
-2. Verify ownership token exists
-3. Check cache invalidation log
-4. Try mirror server fallback
+**Check:**
+1. Ownership token is valid
+2. Cache invalidation broadcast received
+3. Polling interval (default: 30s)
+4. Mirror server running
 
-### Encryption Errors
+### HTML Not Rendering
 
-```python
-# Verify HMAC key matches
-# Check associated data matches
-# Ensure nonces not reused
+```bash
+# Install HTML renderer
+pip install PyQt5 PyQtWebEngine
+
+# Or use external browser option
+# Click "Open in Browser" button
 ```
-
-## Performance
-
-| Operation | Time |
-|-----------|------|
-| Encrypt 1KB | 0.4ms |
-| Decrypt 1KB | 0.4ms |
-| HMAC Verify | 0.1ms |
-| P2P Download | ~100ms |
-| Update Check | 60s interval |
 
 ## Requirements
 
 - **Python:** 3.8+
 - **MySQL:** 5.7+ (for central directory)
-- **PHP:** 7.4+ (for central API)
-- **Libraries:** cryptography, requests, mysql-connector-python
+- **PHP:** 7.4+ (for PHP backend)
+- **PyQt5:** Optional (for HTML rendering)
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `qwde_browser.py` | Main browser with secure HTML viewer |
+| `qwde_peer_network.py` | P2P networking |
+| `qwde_encryption.py` | Encryption layer |
+| `qwde_enhanced_encryption.py` | HMAC + AES-GCM |
+| `qwde_secure_html_viewer.py` | Secure HTML viewer |
+| `qwde_ownership_tokens.py` | Ownership token system |
+| `qwde_delete_site.py` | Site deletion system |
+| `qwde_mirror_server.py` | Mirror server |
+| `qwde_config_wizard.py` | Configuration wizard |
+| `qwde_mysql_ddns.py` | Python central server |
+| `peer_directory_api.php` | PHP central server |
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | This file - complete overview |
+| `STARTUP_GUIDE.md` | Startup instructions |
+| `WEBSITE_CREATION_GUIDE.md` | Create websites |
+| `SECURE_HTML_VIEWER.md` | Secure viewer docs |
+| `ENHANCED_ENCRYPTION_GUIDE.md` | Encryption docs |
+| `DELETION_SYSTEM.md` | Deletion & cache invalidation |
+| `SUPPORTED_FILE_TYPES.md` | File support |
 
 ## Changelog
 
 ### Version 3.0 (Current)
 
-- ✅ HMAC-SHA256 authentication
-- ✅ AES-GCM encryption (upgraded from CBC)
-- ✅ Ownership tokens for deletion
-- ✅ Cache invalidation system
-- ✅ Full mirror server
-- ✅ Update detection (hash/size/version)
+- ✅ Configuration wizard for all components
+- ✅ Python central DDNS server (alternative to PHP)
+- ✅ Cache invalidation with auto-purge
+- ✅ Ownership tokens for secure deletion
+- ✅ Secure HTML viewer (source-first)
+- ✅ HMAC + AES-GCM encryption
+- ✅ Full mirror server with update detection
+- ✅ Plugin system
 
 ### Version 2.0
 
@@ -782,33 +528,21 @@ mysql -u root -p < setup_central_database.sql
 - ✅ Site creation
 - ✅ Peer registration
 
-## Contributing
-
-1. Fork repository
-2. Create feature branch
-3. Test encryption changes thoroughly
-4. Submit pull request
-
-## License
-
-MIT License - See LICENSE file
-
 ## Support
 
 For issues or questions:
-1. Check documentation in `/Documentation` folder
-2. Review console logs
-3. Test with localhost first
-4. Verify database connection
+1. Check documentation in `output/Documentation/`
+2. Run Config Wizard to verify settings
+3. Check console logs for errors
+4. Test with localhost first
 
-## Contact
+## License
 
-- **Website:** secupgrade.com
-- **Protocol:** qwde://
-- **Version:** 3.0
+MIT License
 
 ---
 
 **Build Date:** 2026-03-27  
+**Version:** 3.0  
 **Status:** ✅ Production Ready  
-**Security:** ✓ HMAC ✓ AES-GCM ✓ Ownership Tokens ✓ Cache Invalidation
+**Components:** Browser, Central Server, Config Wizard, Mirror Server
