@@ -103,7 +103,7 @@ output/
 1. **Download** `output/QWDE_Browser/` folder
 2. **Run** `QWDE_Browser.exe`
 3. **Create** sites with the Site Creator button
-4. **Browse** qwede:// sites
+4. **Browse** qwde:// sites
 
 **Configuration** (already set to secupgrade.com):
 ```ini
@@ -171,6 +171,19 @@ build_all.bat
 
 ## Configuration
 
+### Custom Protocol (Optional)
+
+Change the protocol prefix in `qwde_config.ini`:
+
+```ini
+[protocol]
+protocol_prefix = qwde      # Change to: this, mysite, secure, etc.
+protocol_separator = ://
+# Result: qwede://
+```
+
+See `PROTOCOL_CONFIG.md` for full customization options.
+
 ### Using secupgrade.com (Default)
 
 ```ini
@@ -204,7 +217,7 @@ url = http://localhost:8080/qwde_ddns_api.php
 - ✓ Network Health Map
 - ✓ HTTPS Support
 - ✓ QWDE Custom Encryption
-- ✓ qwede:// Protocol
+- ✓ qwde:// Protocol Support
 - ✓ Encryption State Indicator
 
 ### QWDE_PyServerDB.exe Includes:

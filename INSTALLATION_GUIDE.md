@@ -76,7 +76,7 @@
 │  2. Browser publishes to secupgrade.com/qwde_ddns_api.php
 │     └─► Encrypted data stored in MySQL
 │
-│  3. Other users browse qwede://mysite
+│  3. Other users browse qwde://mysite
 │     └─► Download encrypted data from secupgrade.com
 │     └─► Decrypt locally with QWDE encryption
 │

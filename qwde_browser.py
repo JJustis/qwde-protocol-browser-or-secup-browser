@@ -1298,10 +1298,15 @@ class QWDEBrowserGUI(tk.Tk):
     
     def _navigate_to_url(self, event=None):
         """Navigate to URL"""
+        from qwde_protocol_handler import get_protocol, is_valid_url, add_protocol
+        
         url = self.url_var.get().strip()
         
         if not url:
             return
+        
+        # Get configured protocol
+        protocol = get_protocol()
         
         # Check HTTPS-only mode
         if self.https_only and url.startswith('http://'):
@@ -1310,11 +1315,11 @@ class QWDEBrowserGUI(tk.Tk):
                 return
         
         # Add protocol if missing
-        if not url.startswith(('qwde://', 'http://', 'https://')):
-            url = 'qwde://' + url
+        if not is_valid_url(url) and not url.startswith(('http://', 'https://')):
+            url = add_protocol(url)
         
         try:
-            if url.startswith('qwde://'):
+            if is_valid_url(url):
                 self._load_qwde_site(url)
             else:
                 self._load_http_site(url)
@@ -1483,11 +1488,13 @@ class QWDEBrowserGUI(tk.Tk):
     
     def _on_site_double_click(self, event):
         """Handle double-click on site"""
+        from qwde_protocol_handler import create_url
+        
         selection = self.remote_sites_tree.selection()
         if selection:
             item = self.remote_sites_tree.item(selection[0])
             domain = item['values'][0]
-            self.url_var.set(f"qwde://{domain}")
+            self.url_var.set(create_url(domain))
             self._navigate_to_url()
     
     def _discover_peers(self):

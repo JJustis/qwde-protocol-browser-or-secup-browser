@@ -82,7 +82,7 @@ build_all.bat
    ├─► Sent to secupgrade.com/qwde_ddns_api.php
    ├─► Stored in MySQL database
    │
-3. User browses qwede://mysite.qwde
+3. User browses qwde://mysite.qwde
    │
    ├─► Downloads encrypted data from secupgrade.com
    ├─► Decrypts locally in browser
@@ -160,7 +160,7 @@ build_all.bat
 | **Network Map** | Real-time topology visualization |
 | **Encryption** | Full QWDE system from improved_qwde.py |
 | **HTTPS** | Secure connection to secupgrade.com |
-| **qwede://** | Protocol support for decentralized sites |
+| **qwde://** | Protocol support for decentralized sites |
 | **Toolbar** | Encryption indicator, URL bar, navigation |
 
 ## Encryption Details (Built In)
@@ -210,7 +210,7 @@ encrypt_qwde(
 2. Run QWDE_Browser.exe
 3. Click "Network" → "Connect"
 4. Click "Create Site" to make websites
-5. Browse qwede:// sites
+5. Browse qwde:// sites
 ```
 
 ## Quick Start for Server Hosts
@@ -226,6 +226,6 @@ encrypt_qwde(
 - **Build System:** PyInstaller 6.x
 - **Python:** 3.8+
 - **Encryption:** QWDE (RSA+AES+Rolling)
-- **Protocol:** qwede://
+- **Protocol:** qwde://
 - **Central Server:** https://secupgrade.com
 - **Last Updated:** 2026-03-27
