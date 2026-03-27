@@ -2,7 +2,7 @@
 REM QWDE Protocol - Simple Build Script
 REM Builds only the essential EXEs:
 REM 1. QWDE_Browser.exe (Main browser with encryption)
-REM 2. QWDE_PyServerDB.exe (Optional local MySQL server)
+REM 2. QWDE_PyServerDB.exe (Optional local MySQL server with API security)
 
 setlocal enabledelayedexpansion
 
@@ -13,6 +13,7 @@ echo ╠════════════════════════
 echo ║  Building:                                                ║
 echo ║    1. QWDE_Browser.exe (Main browser)                    ║
 echo ║    2. QWDE_PyServerDB.exe (Optional MySQL server)        ║
+echo ║    3. Website Template (Site packaging)                  ║
 echo ╚═══════════════════════════════════════════════════════════╝
 echo.
 
@@ -106,28 +107,33 @@ echo echo.
 echo start QWDE_Browser.exe
 ) > "output\QWDE_Browser\Start.bat"
 
-REM PyServerDB launcher
+REM Mirror Server launcher
 (
 echo @echo off
 echo cd /d "%%~dp0"
 echo echo.
 echo echo ╔═══════════════════════════════════════════════════════════╗
-echo echo ║    QWDE PyServerDB - Local MySQL Server                   ║
+echo echo ║     QWDE Mirror Server - Full Backup                      ║
 echo echo ╠═══════════════════════════════════════════════════════════╣
-echo echo ║  OPTIONAL - Only if hosting your own central server      ║
-echo echo ║  NOT NEEDED if using secupgrade.com                      ║
+echo echo ║  Downloads ALL sites from ALL peers                      ║
+echo echo ║  Auto-updates every 60 seconds                           ║
 echo echo ╚═══════════════════════════════════════════════════════════╝
 echo echo.
-echo echo Starting MySQL server on port 8765...
-echo echo Press Ctrl+C to stop
-echo echo.
-echo QWDE_PyServerDB.exe --server
-) > "output\QWDE_PyServerDB\Start.bat"
+echo python ..\qwde_mirror_server.py
+) > "output\QWDE_PyServerDB\Start_Mirror.bat"
 
 echo [✓] Launcher scripts created
 
 echo.
-echo [6/6] Copying documentation...
+echo [6/6] Copying scripts and SQL...
+
+REM Copy SQL and utility scripts to output
+copy /Y "setup_central_database.sql" "output\" >nul
+copy /Y "run_all.bat" "output\" >nul
+copy /Y "quick_start.bat" "output\" >nul
+copy /Y "qwde_mirror_server.py" "output\" >nul
+copy /Y "setup_central_database.sql" "output\QWDE_PyServerDB\" >nul
+echo [✓] Scripts copied
 
 mkdir "output\Documentation" 2>nul
 copy /Y "README.md" "output\Documentation\" >nul

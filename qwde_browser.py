@@ -1331,16 +1331,53 @@ class QWDEBrowserGUI(tk.Tk):
             self._log_console(f"[-] Navigation failed: {e}")
     
     def _load_qwde_site(self, url: str):
-        """Load QWDE site"""
+        """Load QWDE site with update detection"""
+        from qwde_protocol_handler import get_protocol, strip_protocol
+        
         if not self.peer:
             messagebox.showinfo("Not Connected", "Please connect to the network first")
             return
+        
+        domain = strip_protocol(url)
+        
+        # Check for updates before loading
+        if hasattr(self, 'mirror_server_url') and self.mirror_server_url:
+            try:
+                import requests
+                response = requests.get(
+                    self.mirror_server_url,
+                    params={'action': 'check_update', 'domain': domain},
+                    timeout=5
+                )
+                update_info = response.json()
+                
+                if update_info.get('status') == 'success' and update_info.get('has_update'):
+                    self._log_console(f"[!] Site update available: {domain}")
+                    self._log_console(f"    Cached: v{update_info.get('cached_version')}, {update_info.get('cached_size')} bytes")
+                    self._log_console(f"    Current: v{update_info.get('current_version')}, {update_info.get('current_size')} bytes")
+                    
+                    if messagebox.askyesno("Site Update Available", 
+                        f"Site '{domain}' has been updated!\n\n"
+                        f"Cached version: {update_info.get('cached_version')}\n"
+                        f"Current version: {update_info.get('current_version')}\n\n"
+                        f"Download update?"):
+                        # Force refresh from peer/mirror
+                        if domain in self.peer.sites:
+                            del self.peer.sites[domain]
+                
+            except Exception as e:
+                pass  # Continue with normal load if update check fails
         
         site = self.peer.resolve_qwde_url(url)
         
         if site:
             self._display_site(site, url)
             self._update_encryption_indicator("encrypted")
+            
+            # Log site info
+            site_size = len(site.get('site_data', b''))
+            site_version = site.get('version', 1)
+            self._log_console(f"[+] Loaded: {domain} (v{site_version}, {site_size} bytes)")
         else:
             messagebox.showinfo("Not Found", f"Site not found: {url}")
             self._update_encryption_indicator("unknown")
@@ -1393,7 +1430,7 @@ class QWDEBrowserGUI(tk.Tk):
             self._update_encryption_indicator("unknown")
     
     def _display_site(self, site: dict, url: str):
-        """Display site content"""
+        """Display site content with secure HTML viewer option"""
         self.current_site = site
         
         # Get content (may be encrypted)
@@ -1409,8 +1446,16 @@ class QWDEBrowserGUI(tk.Tk):
         # Apply plugins
         content = self.plugin_manager.on_page_load(url, content)
         
-        self.content_display.delete('1.0', tk.END)
-        self.content_display.insert(tk.END, content)
+        # Check if content is HTML
+        is_html = content.strip().startswith('<!DOCTYPE') or content.strip().startswith('<html')
+        
+        if is_html:
+            # Show in secure HTML viewer with source-first approach
+            self._display_secure_html(content, url)
+        else:
+            # Plain text - show directly
+            self.content_display.delete('1.0', tk.END)
+            self.content_display.insert('1.0', content)
         
         self.site_info_label.config(
             text=f"Domain: {site.get('domain', 'unknown')} | "
@@ -1419,6 +1464,34 @@ class QWDEBrowserGUI(tk.Tk):
         )
         
         self._log_console(f"[+] Loaded site: {url}")
+    
+    def _display_secure_html(self, html_content: str, url: str):
+        """Display HTML with secure viewer (source first, then render)"""
+        from qwde_secure_html_viewer import SecureHTMLWindow
+        
+        # Create secure viewer window
+        viewer_window = SecureHTMLWindow(
+            self,
+            title=f"QWDE Site: {url}",
+            html_content=html_content
+        )
+        
+        # Hide main content display (showing in secure viewer instead)
+        self.content_display.delete('1.0', tk.END)
+        self.content_display.insert(
+            '1.0',
+            f"HTML content loaded from: {url}\n\n"
+            f"✓ Secure HTML viewer opened in new window\n"
+            f"✓ Source code shown first for security review\n"
+            f"✓ Click 'Render HTML' to view rendered page\n\n"
+            f"Security Features:\n"
+            f"  • Source code review before rendering\n"
+            f"  • Security confirmation dialog\n"
+            f"  • Toggle back to source anytime\n"
+            f"  • External browser option available"
+        )
+        
+        self._log_console(f"[+] HTML opened in secure viewer: {url}")
     
     def _add_to_history(self, url: str):
         """Add to navigation history"""
