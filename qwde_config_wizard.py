@@ -55,7 +55,15 @@ class QWDEConfigWizard:
         self.page_security = self._create_security_page()
         self.notebook.add(self.page_security, text="Security")
         
-        # Page 7: Review & Save
+        # Page 7: Deployment Path
+        self.page_deployment = self._create_deployment_page()
+        self.notebook.add(self.page_deployment, text="Deployment Path")
+        
+        # Page 8: Self-Host Guide
+        self.page_selfhost = self._create_selfhost_page()
+        self.notebook.add(self.page_selfhost, text="Self-Host Guide")
+        
+        # Page 9: Review & Save
         self.page_review = self._create_review_page()
         self.notebook.add(self.page_review, text="Review")
         
@@ -126,11 +134,20 @@ Click "Next" to begin configuration.
         type_frame.pack(fill=tk.X, pady=10)
         
         self.server_type = tk.StringVar(value="external")
+        
         ttk.Radiobutton(
             type_frame,
             text="Use external server (secupgrade.com)",
             variable=self.server_type,
             value="external",
+            command=self._toggle_server_fields
+        ).pack(anchor=tk.W, pady=5)
+        
+        ttk.Radiobutton(
+            type_frame,
+            text="Use secupgrade.com/switch domain",
+            variable=self.server_type,
+            value="switch",
             command=self._toggle_server_fields
         ).pack(anchor=tk.W, pady=5)
         
@@ -197,34 +214,63 @@ Click "Next" to begin configuration.
         db_frame = ttk.LabelFrame(frame, text="Database Connection", padding=10)
         db_frame.pack(fill=tk.X, pady=10)
         
-        ttk.Label(db_frame, text="Host:").grid(row=0, column=0, sticky='w', pady=5)
+        # Database type selection
+        self.db_type = tk.StringVar(value="mysql")
+        ttk.Radiobutton(
+            db_frame,
+            text="MySQL (from XAMPP or installed MySQL)",
+            variable=self.db_type,
+            value="mysql"
+        ).grid(row=0, column=0, columnspan=2, sticky='w', pady=5)
+        
+        ttk.Radiobutton(
+            db_frame,
+            text="SQLite (simpler, no installation needed)",
+            variable=self.db_type,
+            value="sqlite"
+        ).grid(row=1, column=0, columnspan=2, sticky='w', pady=5)
+        
+        # MySQL fields
+        ttk.Label(db_frame, text="Host:").grid(row=2, column=0, sticky='w', pady=5)
         self.db_host = ttk.Entry(db_frame, width=30)
         self.db_host.insert(0, 'localhost')
-        self.db_host.grid(row=0, column=1, pady=5, padx=10)
+        self.db_host.grid(row=2, column=1, pady=5, padx=10)
         
-        ttk.Label(db_frame, text="Port:").grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Label(db_frame, text="Port:").grid(row=3, column=0, sticky='w', pady=5)
         self.db_port = ttk.Entry(db_frame, width=30)
         self.db_port.insert(0, '3306')
-        self.db_port.grid(row=1, column=1, pady=5, padx=10)
+        self.db_port.grid(row=3, column=1, pady=5, padx=10)
         
-        ttk.Label(db_frame, text="Database Name:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Label(db_frame, text="Database Name:").grid(row=4, column=0, sticky='w', pady=5)
         self.db_name = ttk.Entry(db_frame, width=30)
         self.db_name.insert(0, 'qwde_directory')
-        self.db_name.grid(row=2, column=1, pady=5, padx=10)
+        self.db_name.grid(row=4, column=1, pady=5, padx=10)
         
-        ttk.Label(db_frame, text="Username:").grid(row=3, column=0, sticky='w', pady=5)
+        ttk.Label(db_frame, text="Username:").grid(row=5, column=0, sticky='w', pady=5)
         self.db_user = ttk.Entry(db_frame, width=30)
         self.db_user.insert(0, 'qwde_user')
-        self.db_user.grid(row=3, column=1, pady=5, padx=10)
+        self.db_user.grid(row=5, column=1, pady=5, padx=10)
         
-        ttk.Label(db_frame, text="Password:").grid(row=4, column=0, sticky='w', pady=5)
+        ttk.Label(db_frame, text="Password:").grid(row=6, column=0, sticky='w', pady=5)
         self.db_password = ttk.Entry(db_frame, width=30, show='*')
-        self.db_password.grid(row=4, column=1, pady=5, padx=10)
+        self.db_password.grid(row=6, column=1, pady=5, padx=10)
+        
+        # SQLite path field (hidden by default)
+        ttk.Label(db_frame, text="SQLite File Path:").grid(row=7, column=0, sticky='w', pady=5)
+        self.db_sqlite_path = ttk.Entry(db_frame, width=30)
+        self.db_sqlite_path.insert(0, 'qwde_ddns.db')
+        self.db_sqlite_path.grid(row=7, column=1, pady=5, padx=10)
         
         # Test button
         ttk.Button(db_frame, text="🧪 Test Database Connection", command=self._test_database).grid(
-            row=5, column=1, pady=10, sticky='e'
+            row=8, column=1, pady=10, sticky='e'
         )
+        
+        # Toggle fields based on database type
+        self._toggle_db_fields()
+        
+        # Bind to toggle
+        self.db_type.trace('w', lambda *args: self._toggle_db_fields())
         
         # Info text
         info_text = """
@@ -235,14 +281,32 @@ Note: The database stores:
 • Cache invalidation records
 
 Site content is stored on peer computers, NOT in the database.
+
+MySQL: Requires XAMPP or MySQL installation
+SQLite: No installation needed, single file database
         """
         
-        info = scrolledtext.ScrolledText(frame, height=6, wrap=tk.WORD)
+        info = scrolledtext.ScrolledText(frame, height=8, wrap=tk.WORD)
         info.insert('1.0', info_text)
         info.config(state='disabled')
         info.pack(fill=tk.X, pady=10)
         
         return frame
+    
+    def _toggle_db_fields(self):
+        """Toggle database fields based on type"""
+        if self.db_type.get() == "sqlite":
+            # Disable MySQL fields
+            for widget in [self.db_host, self.db_port, self.db_name, self.db_user, self.db_password]:
+                widget.config(state='disabled')
+            # Enable SQLite field
+            self.db_sqlite_path.config(state='normal')
+        else:
+            # Enable MySQL fields
+            for widget in [self.db_host, self.db_port, self.db_name, self.db_user, self.db_password]:
+                widget.config(state='normal')
+            # Disable SQLite field
+            self.db_sqlite_path.config(state='disabled')
     
     def _create_browser_page(self):
         """Create browser configuration page"""
@@ -399,6 +463,441 @@ Site content is stored on peer computers, NOT in the database.
         
         return frame
     
+    def _create_deployment_page(self):
+        """Create deployment path configuration page"""
+        frame = ttk.Frame(self.root, padding=20)
+        
+        title = ttk.Label(
+            frame,
+            text="PHP Files Deployment Path",
+            font=('Arial', 14, 'bold')
+        )
+        title.pack(pady=10)
+        
+        # Deployment location selection
+        location_frame = ttk.LabelFrame(frame, text="Deploy switch/ folder to:", padding=10)
+        location_frame.pack(fill=tk.X, pady=10)
+        
+        self.deployment_type = tk.StringVar(value="xampp")
+        
+        ttk.Radiobutton(
+            location_frame,
+            text="XAMPP htdocs (C:\\xampp\\htdocs\\switch)",
+            variable=self.deployment_type,
+            value="xampp",
+            command=self._update_deployment_path
+        ).pack(anchor=tk.W, pady=5)
+        
+        ttk.Radiobutton(
+            location_frame,
+            text="Custom path (specify below)",
+            variable=self.deployment_type,
+            value="custom",
+            command=self._update_deployment_path
+        ).pack(anchor=tk.W, pady=5)
+        
+        ttk.Radiobutton(
+            location_frame,
+            text="FTP/SFTP (upload to remote server)",
+            variable=self.deployment_type,
+            value="ftp",
+            command=self._update_deployment_path
+        ).pack(anchor=tk.W, pady=5)
+        
+        # Path entry
+        path_frame = ttk.LabelFrame(frame, text="Deployment Path", padding=10)
+        path_frame.pack(fill=tk.X, pady=10)
+        
+        ttk.Label(path_frame, text="Path:").grid(row=0, column=0, sticky='w', pady=5)
+        self.deployment_path = ttk.Entry(path_frame, width=60)
+        self.deployment_path.insert(0, 'C:\\xampp\\htdocs\\switch')
+        self.deployment_path.grid(row=0, column=1, pady=5, padx=10)
+        
+        ttk.Button(path_frame, text="📂 Browse", command=self._browse_path).grid(
+            row=0, column=2, pady=5, padx=5
+        )
+        
+        # FTP settings (hidden by default)
+        ftp_frame = ttk.LabelFrame(frame, text="FTP/SFTP Settings", padding=10)
+        ftp_frame.pack(fill=tk.X, pady=10)
+        
+        ttk.Label(ftp_frame, text="Host:").grid(row=0, column=0, sticky='w', pady=5)
+        self.ftp_host = ttk.Entry(ftp_frame, width=30)
+        self.ftp_host.grid(row=0, column=1, pady=5, padx=10)
+        
+        ttk.Label(ftp_frame, text="Port:").grid(row=1, column=0, sticky='w', pady=5)
+        self.ftp_port = ttk.Entry(ftp_frame, width=30)
+        self.ftp_port.insert(0, '21')
+        self.ftp_port.grid(row=1, column=1, pady=5, padx=10)
+        
+        ttk.Label(ftp_frame, text="Username:").grid(row=2, column=0, sticky='w', pady=5)
+        self.ftp_user = ttk.Entry(ftp_frame, width=30)
+        self.ftp_user.grid(row=2, column=1, pady=5, padx=10)
+        
+        ttk.Label(ftp_frame, text="Password:").grid(row=3, column=0, sticky='w', pady=5)
+        self.ftp_password = ttk.Entry(ftp_frame, width=30, show='*')
+        self.ftp_password.grid(row=3, column=1, pady=5, padx=10)
+        
+        ttk.Label(ftp_frame, text="Remote Path:").grid(row=4, column=0, sticky='w', pady=5)
+        self.ftp_path = ttk.Entry(ftp_frame, width=30)
+        self.ftp_path.insert(0, '/var/www/html/switch')
+        self.ftp_path.grid(row=4, column=1, pady=5, padx=10)
+        
+        # Deploy button
+        deploy_frame = ttk.Frame(frame)
+        deploy_frame.pack(fill=tk.X, pady=20)
+        
+        ttk.Button(
+            deploy_frame,
+            text="🚀 Deploy switch/ Folder Now",
+            command=self._deploy_files,
+            style='Accent.TButton'
+        ).pack()
+        
+        # Status
+        self.deploy_status = ttk.Label(frame, text="", foreground='#888888')
+        self.deploy_status.pack(pady=10)
+        
+        # Initialize fields
+        self._update_deployment_path()
+        
+        return frame
+    
+    def _update_deployment_path(self):
+        """Update deployment path based on selection"""
+        if self.deployment_type.get() == "xampp":
+            self.deployment_path.delete(0, tk.END)
+            self.deployment_path.insert(0, 'C:\\xampp\\htdocs\\switch')
+            self.deployment_path.config(state='normal')
+        elif self.deployment_type.get() == "custom":
+            self.deployment_path.config(state='normal')
+        elif self.deployment_type.get() == "ftp":
+            self.deployment_path.config(state='disabled')
+        
+        # Show/hide FTP fields
+        for widget in [self.ftp_host, self.ftp_port, self.ftp_user, self.ftp_password, self.ftp_path]:
+            if self.deployment_type.get() == "ftp":
+                widget.config(state='normal')
+            else:
+                widget.config(state='disabled')
+    
+    def _browse_path(self):
+        """Browse for deployment path"""
+        from tkinter import filedialog
+        path = filedialog.askdirectory(title="Select Deployment Folder")
+        if path:
+            self.deployment_path.delete(0, tk.END)
+            self.deployment_path.insert(0, path)
+    
+    def _deploy_files(self):
+        """Deploy switch/ folder files"""
+        import shutil
+        import os
+        
+        # Find switch folder
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        switch_folder = os.path.join(script_dir, 'switch')
+        
+        if not os.path.exists(switch_folder):
+            # Try current directory
+            switch_folder = 'switch'
+        
+        if not os.path.exists(switch_folder):
+            messagebox.showerror(
+                "Error",
+                "switch/ folder not found!\n\n"
+                "Please run build_all.bat first to create the switch/ folder."
+            )
+            return
+        
+        if self.deployment_type.get() == "xampp":
+            dest_path = self.deployment_path.get()
+            
+            # Create parent directory if needed
+            parent_dir = os.path.dirname(dest_path)
+            if not os.path.exists(parent_dir):
+                if not messagebox.askyesno(
+                    "Directory Not Found",
+                    f"XAMPP htdocs not found at:\n{parent_dir}\n\n"
+                    f"Create directory and continue?"
+                ):
+                    return
+                try:
+                    os.makedirs(parent_dir)
+                except:
+                    pass
+            
+            try:
+                # Copy files
+                if os.path.exists(dest_path):
+                    shutil.rmtree(dest_path)
+                shutil.copytree(switch_folder, dest_path)
+                
+                self.deploy_status.config(
+                    text=f"✓ Deployed to: {dest_path}",
+                    foreground='#00ff88'
+                )
+                messagebox.showinfo(
+                    "Success",
+                    f"switch/ folder deployed to:\n{dest_path}\n\n"
+                    f"Access at: http://localhost/switch/"
+                )
+            except Exception as e:
+                self.deploy_status.config(
+                    text=f"✗ Deployment failed",
+                    foreground='#ff4444'
+                )
+                messagebox.showerror("Error", f"Deployment failed:\n{e}")
+        
+        elif self.deployment_type.get() == "custom":
+            dest_path = self.deployment_path.get()
+            
+            try:
+                if os.path.exists(dest_path):
+                    shutil.rmtree(dest_path)
+                shutil.copytree(switch_folder, dest_path)
+                
+                self.deploy_status.config(
+                    text=f"✓ Deployed to: {dest_path}",
+                    foreground='#00ff88'
+                )
+                messagebox.showinfo(
+                    "Success",
+                    f"switch/ folder deployed to:\n{dest_path}"
+                )
+            except Exception as e:
+                self.deploy_status.config(
+                    text=f"✗ Deployment failed",
+                    foreground='#ff4444'
+                )
+                messagebox.showerror("Error", f"Deployment failed:\n{e}")
+        
+        elif self.deployment_type.get() == "ftp":
+            # FTP deployment instructions
+            ftp_instructions = f"""
+FTP/SFTP Deployment Instructions
+═══════════════════════════════════
+
+Host: {self.ftp_host.get()}
+Port: {self.ftp_port.get()}
+Username: {self.ftp_user.get()}
+Remote Path: {self.ftp_path.get()}
+
+Manual Steps:
+1. Connect to your server via FTP/SFTP
+2. Navigate to: {self.ftp_path.get()}
+3. Upload ALL files from switch/ folder
+4. Verify files are uploaded correctly
+5. Test: https://{self.ftp_host.get()}/switch/peer_directory_api.php?action=get_stats
+
+Files to upload:
+• peer_directory_api.php
+• api_handler.php
+• setup_central_database.sql
+• qwde_config.ini
+• index.html
+• css/ (folder)
+• js/ (folder)
+"""
+            
+            # Save instructions to file
+            instruction_file = 'FTP_Deployment_Instructions.txt'
+            with open(instruction_file, 'w') as f:
+                f.write(ftp_instructions)
+            
+            self.deploy_status.config(
+                text=f"✓ FTP instructions saved to {instruction_file}",
+                foreground='#00ff88'
+            )
+            messagebox.showinfo(
+                "FTP Deployment",
+                ftp_instructions +
+                f"\n\nInstructions saved to: {instruction_file}"
+            )
+    
+    def _create_selfhost_page(self):
+        """Create self-hosting guide page"""
+        frame = ttk.Frame(self.root, padding=20)
+        
+        title = ttk.Label(
+            frame,
+            text="Self-Hosting Guide (Optional)",
+            font=('Arial', 14, 'bold')
+        )
+        title.pack(pady=10)
+        
+        guide_text = scrolledtext.ScrolledText(frame, height=30, wrap=tk.WORD)
+        guide_text.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        guide_content = """
+═══════════════════════════════════════════════════════════
+SELF-HOSTING QWDE CENTRAL DIRECTORY
+═══════════════════════════════════════════════════════════
+
+If you want to host your own central directory instead of
+using secupgrade.com, follow these steps:
+
+STEP 1: INSTALL XAMPP
+───────────────────────────────────────────────────────────
+1. Download XAMPP from: https://www.apachefriends.org
+2. Install XAMPP to C:\\xampp
+3. Start Apache and MySQL from XAMPP Control Panel
+
+STEP 2: SETUP DATABASE
+───────────────────────────────────────────────────────────
+OPTION A: MySQL (Recommended for production)
+1. Open phpMyAdmin: http://localhost/phpmyadmin
+2. Click "Import" tab
+3. Choose file: setup_central_database.sql
+4. Click "Go" button
+5. Database "qwde_directory" will be created
+
+OR use command line:
+  mysql -u root -p < setup_central_database.sql
+
+OPTION B: SQLite (Simpler, for testing)
+1. No setup needed!
+2. Database file created automatically
+3. Select "SQLite" in Config Wizard
+4. Set path: qwde_ddns.db
+
+In Config Wizard (Step 3):
+  ● MySQL - For XAMPP/production use
+  ○ SQLite - For quick testing, no install
+
+STEP 3: DEPLOY PHP BACKEND
+───────────────────────────────────────────────────────────
+1. Copy peer_directory_api.php to:
+   C:\\xampp\\htdocs\\api\\peer_directory_api.php
+
+2. Create folder: C:\\xampp\\htdocs\\api\\
+
+3. Edit peer_directory_api.php:
+   - Find: $db_config array
+   - Set password: 'password' => 'your_mysql_password'
+
+4. Test: http://localhost/api/peer_directory_api.php?action=get_stats
+
+STEP 4: CONFIGURE FIREWALL
+───────────────────────────────────────────────────────────
+1. Open Windows Firewall
+2. Add inbound rule for port 80 (HTTP)
+3. Add inbound rule for port 443 (HTTPS if using SSL)
+4. Add inbound rule for port 8765 (DDNS server)
+
+STEP 5: SETUP SSL (RECOMMENDED)
+───────────────────────────────────────────────────────────
+1. Get SSL certificate (Let's Encrypt free)
+2. Configure Apache for HTTPS
+3. Update config: protocol = https
+
+STEP 6: PORT FORWARDING (FOR EXTERNAL ACCESS)
+───────────────────────────────────────────────────────────
+1. Open router admin panel
+2. Forward port 80 to your PC's IP
+3. Forward port 8765 to your PC's IP
+4. Use Dynamic DNS (No-IP, DuckDNS) for domain
+
+STEP 7: UPDATE CONFIGURATION
+───────────────────────────────────────────────────────────
+In this wizard, select:
+  - Server Type: "Host your own central server"
+  - Host: Your public IP or domain
+  - Port: 80 (HTTP) or 443 (HTTPS)
+  - API Path: /api/peer_directory_api.php
+
+═══════════════════════════════════════════════════════════
+
+WEBSITE FILES NEEDED:
+───────────────────────────────────────────────────────────
+Upload these to your web server:
+
+1. peer_directory_api.php  (Main API handler)
+2. setup_central_database.sql  (Database setup)
+
+Optional:
+3. qwde_config.ini  (Configuration template)
+4. START_HERE.txt  (Setup instructions for users)
+
+═══════════════════════════════════════════════════════════
+
+TESTING YOUR SETUP:
+───────────────────────────────────────────────────────────
+1. Test API: http://your-domain.com/api/peer_directory_api.php?action=get_stats
+2. Expected: {"status":"success","total_peers":0,...}
+3. If error: Check database connection in PHP file
+
+═══════════════════════════════════════════════════════════
+
+MIRROR SERVER SETUP (OPTIONAL):
+───────────────────────────────────────────────────────────
+1. Install Python 3.8+
+2. Install dependencies:
+   pip install -r requirements.txt
+3. Run mirror server:
+   python qwde_mirror_server.py
+4. Configure in this wizard (Step 5)
+
+═══════════════════════════════════════════════════════════
+
+NEED HELP?
+───────────────────────────────────────────────────────────
+• Check documentation in output/Documentation/
+• Review SYSTEM_DIAGRAM.md for architecture
+• Check logs for error messages
+• Test with localhost first before going live
+
+═══════════════════════════════════════════════════════════
+"""
+        
+        guide_text.insert('1.0', guide_content)
+        guide_text.config(state='disabled')
+        
+        # Buttons
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill=tk.X, pady=10)
+        
+        def open_phpmyadmin():
+            import webbrowser
+            webbrowser.open('http://localhost/phpmyadmin')
+        
+        ttk.Button(
+            btn_frame,
+            text="🌐 Open phpMyAdmin",
+            command=open_phpmyadmin
+        ).pack(side=tk.LEFT, padx=5)
+        
+        def open_xampp():
+            import os
+            os.startfile('C:\\xampp\\xampp-control.exe')
+        
+        ttk.Button(
+            btn_frame,
+            text="⚙️ Open XAMPP Control",
+            command=open_xampp
+        ).pack(side=tk.LEFT, padx=5)
+        
+        def copy_setup_sql():
+            import shutil
+            try:
+                shutil.copy('setup_central_database.sql', 'C:\\xampp\\htdocs\\')
+                messagebox.showinfo(
+                    "Success",
+                    "setup_central_database.sql copied to:\n"
+                    "C:\\xampp\\htdocs\\\n\n"
+                    "You can now import it in phpMyAdmin!"
+                )
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to copy file:\n{e}")
+        
+        ttk.Button(
+            btn_frame,
+            text="📋 Copy SQL to htdocs",
+            command=copy_setup_sql
+        ).pack(side=tk.LEFT, padx=5)
+        
+        return frame
+    
     def _create_review_page(self):
         """Create review page"""
         frame = ttk.Frame(self.root, padding=20)
@@ -442,7 +941,12 @@ Site content is stored on peer computers, NOT in the database.
             self.central_host.insert(0, 'secupgrade.com')
             self.central_path.delete(0, tk.END)
             self.central_path.insert(0, '/peer_directory_api.php')
-        else:
+        elif self.server_type.get() == "switch":
+            self.central_host.delete(0, tk.END)
+            self.central_host.insert(0, 'secupgrade.com')
+            self.central_path.delete(0, tk.END)
+            self.central_path.insert(0, '/switch')
+        else:  # self_hosted
             self.central_host.delete(0, tk.END)
             self.central_host.insert(0, 'localhost')
             self.central_path.delete(0, tk.END)
@@ -521,32 +1025,46 @@ SECURITY:
         """Load existing configuration"""
         if os.path.exists(self.config_path):
             self.config.read(self.config_path)
-            
+
             # Load central server
             if 'central_server' in self.config:
-                self.central_protocol.set(self.config.get('central_server', 'protocol', fallback='https'))
-                self.central_host.set(self.config.get('central_server', 'host', fallback='secupgrade.com'))
+                protocol = self.config.get('central_server', 'protocol', fallback='https')
+                host = self.config.get('central_server', 'host', fallback='secupgrade.com')
+                path = self.config.get('central_server', 'api_path', fallback='/peer_directory_api.php')
+                
+                self.central_protocol.set(protocol)
+                self.central_host.delete(0, tk.END)
+                self.central_host.insert(0, host)
                 self.central_port.set(self.config.get('central_server', 'port', fallback='443'))
-                self.central_path.set(self.config.get('central_server', 'api_path', fallback='/peer_directory_api.php'))
-            
+                self.central_path.delete(0, tk.END)
+                self.central_path.insert(0, path)
+                
+                # Determine server type from saved config
+                if host == 'secupgrade.com' and path == '/switch':
+                    self.server_type.set('switch')
+                elif host == 'secupgrade.com':
+                    self.server_type.set('external')
+                else:
+                    self.server_type.set('self_hosted')
+
             # Load database
             if 'mysql' in self.config:
                 self.db_host.set(self.config.get('mysql', 'host', fallback='localhost'))
                 self.db_port.set(self.config.get('mysql', 'port', fallback='3306'))
                 self.db_name.set(self.config.get('mysql', 'database', fallback='qwde_directory'))
                 self.db_user.set(self.config.get('mysql', 'user', fallback='qwde_user'))
-            
+
             # Load protocol
             if 'protocol' in self.config:
                 self.protocol_prefix.set(self.config.get('protocol', 'protocol_prefix', fallback='qwde'))
                 self.protocol_separator.set(self.config.get('protocol', 'protocol_separator', fallback='://'))
-            
+
             # Load mirror
             if 'mirror' in self.config:
                 self.mirror_port.set(self.config.get('mirror', 'port', fallback='8765'))
                 self.mirror_sync.set(self.config.get('mirror', 'sync_interval', fallback='30'))
                 self.mirror_update.set(self.config.get('mirror', 'update_interval', fallback='60'))
-            
+
             # Load security
             if 'security' in self.config:
                 self.https_only.set(self.config.getboolean('security', 'https_only', fallback=True))
@@ -556,28 +1074,47 @@ SECURITY:
     
     def _test_database(self):
         """Test database connection"""
-        try:
-            connection = mysql.connector.connect(
-                host=self.db_host.get(),
-                port=int(self.db_port.get()),
-                database=self.db_name.get(),
-                user=self.db_user.get(),
-                password=self.db_password.get()
-            )
-            
-            if connection.is_connected():
+        if self.db_type.get() == "sqlite":
+            # Test SQLite
+            try:
+                conn = sqlite3.connect(self.db_sqlite_path.get())
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                conn.close()
                 messagebox.showinfo(
                     "Success",
-                    "Database connection successful!\n\n"
-                    f"Host: {self.db_host.get()}:{self.db_port.get()}\n"
-                    f"Database: {self.db_name.get()}"
+                    f"SQLite database connection successful!\n\n"
+                    f"File: {os.path.abspath(self.db_sqlite_path.get())}"
                 )
-                connection.close()
-        except Error as e:
-            messagebox.showerror(
-                "Connection Failed",
-                f"Could not connect to database:\n\n{e}"
-            )
+            except Exception as e:
+                messagebox.showerror(
+                    "Connection Failed",
+                    f"Could not connect to SQLite database:\n\n{e}"
+                )
+        else:
+            # Test MySQL
+            try:
+                connection = mysql.connector.connect(
+                    host=self.db_host.get(),
+                    port=int(self.db_port.get()),
+                    database=self.db_name.get(),
+                    user=self.db_user.get(),
+                    password=self.db_password.get()
+                )
+                
+                if connection.is_connected():
+                    messagebox.showinfo(
+                        "Success",
+                        "MySQL database connection successful!\n\n"
+                        f"Host: {self.db_host.get()}:{self.db_port.get()}\n"
+                        f"Database: {self.db_name.get()}"
+                    )
+                    connection.close()
+            except Error as e:
+                messagebox.showerror(
+                    "Connection Failed",
+                    f"Could not connect to MySQL database:\n\n{e}"
+                )
     
     def _test_connection(self):
         """Test central server connection"""
@@ -626,6 +1163,11 @@ SECURITY:
         self.config['central_server']['port'] = self.central_port.get()
         self.config['central_server']['api_path'] = self.central_path.get()
         self.config['central_server']['url'] = self.url_preview.cget('text')
+
+        if 'database' not in self.config:
+            self.config['database'] = {}
+        self.config['database']['type'] = self.db_type.get()
+        self.config['database']['sqlite_path'] = self.db_sqlite_path.get()
         
         if 'mysql' not in self.config:
             self.config['mysql'] = {}

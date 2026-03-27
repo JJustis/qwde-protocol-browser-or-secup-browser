@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['qwde_browser.py'],
+    ['qwde_config_wizard.py'],
     pathex=[],
     binaries=[],
-    datas=[('qwde_config.ini', '.'), ('plugins', 'plugins')],
-    hiddenimports=['tkinter', 'cryptography', 'requests', 'PIL'],
+    datas=[],
+    hiddenimports=['tkinter', 'mysql.connector'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='QWDE_Browser',
+    name='QWDE_Config_Wizard',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

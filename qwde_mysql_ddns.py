@@ -1,6 +1,6 @@
 """
-QWDE Protocol - MySQL DDNS Server
-Central DDNS with MySQL backend for persistent storage at secupgrade.com
+QWDE Protocol - Central DDNS Server
+Supports both MySQL and SQLite backends
 """
 
 import socket
@@ -13,16 +13,19 @@ from datetime import datetime
 from typing import Dict, List, Optional, Set
 import logging
 import configparser
+import os
 
-# MySQL support
+# MySQL support (optional)
 try:
     import mysql.connector
     from mysql.connector import Error
     MYSQL_AVAILABLE = True
 except ImportError:
     MYSQL_AVAILABLE = False
-    print("Warning: mysql-connector-python not installed. Using SQLite fallback.")
-    import sqlite3
+    logging.warning("mysql-connector-python not installed. MySQL support disabled.")
+
+# SQLite (always available)
+import sqlite3
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -986,33 +989,44 @@ def create_config_file(config_path: str = 'qwde_config.ini'):
 
 
 def run_mysql_server():
-    """Run the MySQL DDNS server"""
+    """Run the DDNS server (MySQL or SQLite based on config)"""
     config = load_config()
     
+    # Determine database type from config
+    db_type = config.get('database', {}).get('type', 'mysql')
+    use_sqlite = (db_type == 'sqlite')
+    
+    if use_sqlite:
+        sqlite_path = config.get('database', {}).get('sqlite_path', 'qwde_ddns.db')
+        db_info = f"SQLite: {sqlite_path}"
+    else:
+        db_info = f"MySQL: {config['mysql']['user']}@{config['mysql']['host']}:{config['mysql']['port']}/{config['mysql']['database']}"
+
     server = MySQLDDNSServer(
         host=config['server']['host'],
         port=config['server']['port'],
         mysql_config=config['mysql'],
-        use_sqlite=config['server']['use_sqlite']
+        use_sqlite=use_sqlite,
+        sqlite_path=sqlite_path if use_sqlite else 'qwede_ddns.db'
     )
-    
+
     print(f"""
 ╔═══════════════════════════════════════════════════════════╗
-║        QWDE Protocol - MySQL DDNS Server                  ║
+║        QWDE Protocol - DDNS Server                        ║
 ╠═══════════════════════════════════════════════════════════╣
 ║  Listening on port: {config['server']['port']}                            ║
-║  Database: {'MySQL (' + config['mysql']['host'] + ')' if not config['server']['use_sqlite'] else 'SQLite'}                    ║
+║  Database: {db_info:<50} ║
 ║  Central Server: ddns.secupgrade.com                     ║
 ║                                                           ║
 ║  Features:                                                ║
-║    • MySQL persistent storage                            ║
+║    • {'SQLite' if use_sqlite else 'MySQL'} persistent storage                               ║
 ║    • Peer discovery & registration                         ║
 ║    • Site registration with fwild indexing                ║
 ║    • Live peer selection (pin wheel)                      ║
 ║    • Automatic site synchronization                       ║
 ╚═══════════════════════════════════════════════════════════╝
     """)
-    
+
     try:
         server.start()
     except KeyboardInterrupt:
