@@ -1,0 +1,333 @@
+# QWDE Protocol - Setup Guide
+
+## Quick Start
+
+### For Testing (Localhost)
+
+1. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start Central DDNS Server (Terminal 1):**
+   ```bash
+   python qwde_mysql_ddns.py --server
+   ```
+   Or use the EXE: `DDNS_Server\QWDE_DDNS_Server.exe`
+
+3. **Start Browser Client (Terminal 2):**
+   ```bash
+   python qwde_browser_launcher.py
+   ```
+   Or use the EXE: `Browser_Client\QWDE_Browser.exe`
+
+4. **Create a Site:**
+   - Use the GUI to create a site, or
+   ```bash
+   python qwde_protocol.py --create mysite "Hello QWDE!"
+   ```
+
+### For Production (secupgrade.com)
+
+1. **Configure MySQL Database on secupgrade.com:**
+
+   ```sql
+   CREATE DATABASE qwde_ddns;
+   CREATE USER 'qwde_user'@'%' IDENTIFIED BY 'your_secure_password';
+   GRANT ALL PRIVILEGES ON qwde_ddns.* TO 'qwde_user'@'%';
+   FLUSH PRIVILEGES;
+   ```
+
+2. **Edit qwde_config.ini:**
+   ```ini
+   [mysql]
+   host = secupgrade.com
+   port = 3306
+   user = qwde_user
+   password = your_secure_password
+   database = qwde_ddns
+
+   [central_server]
+   host = ddns.secupgrade.com
+   port = 8765
+   ```
+
+3. **Deploy Central DDNS Server:**
+   - Copy `DDNS_Server\` folder to your server
+   - Run `QWDE_DDNS_Server.exe`
+   - Ensure port 8765 (UDP) is open in firewall
+
+4. **Deploy Browser Client:**
+   - Copy `Browser_Client\` folder to client machines
+   - Run `QWDE_Browser.exe`
+   - Clients will auto-connect to secupgrade.com
+
+## Auto-Download Feature
+
+The QWDE Protocol automatically downloads all sites when a client starts:
+
+1. **On Peer Startup:**
+   - Connects to central DDNS server
+   - Downloads ALL sites from DDNS database
+   - Discovers live peers
+   - Downloads additional sites from peers
+
+2. **Continuous Sync:**
+   - Heartbeat every 60 seconds
+   - Peer discovery every 120 seconds
+   - Automatic site updates propagation
+
+3. **Fallback Behavior:**
+   - If no peers available → download from central DDNS
+   - If DDNS unavailable → use cached local sites
+   - Sites persist in local database
+
+## Building EXE Files
+
+### Prerequisites
+```bash
+pip install pyinstaller mysql-connector-python cryptography
+```
+
+### Build Commands
+
+**Option 1: Use Build Script**
+```bash
+build_exe.bat
+```
+
+**Option 2: Manual Build**
+```bash
+# Build DDNS Server
+pyinstaller --clean qwde_mysql_ddns_server.spec
+
+# Build Browser Client
+pyinstaller --clean qwde_browser_launcher.spec
+```
+
+### Output Structure
+```
+exe_output/
+├── DDNS_Server/
+│   └── QWDE_DDNS_Server.exe
+├── Browser_Client/
+│   └── QWDE_Browser.exe
+└── qwde_config.ini
+```
+
+## Configuration Options
+
+### qwde_config.ini
+
+```ini
+[mysql]
+# Central database server
+host = secupgrade.com
+port = 3306
+user = qwde_user
+password = secure_password
+database = qwde_ddns
+
+[server]
+# Local DDNS server settings
+host = 0.0.0.0
+port = 8765
+use_sqlite = False  # Set True for SQLite fallback
+
+[central_server]
+# Where clients connect
+host = ddns.secupgrade.com
+port = 8765
+
+[peer]
+# P2P network settings
+default_port = 8766
+max_connections = 8
+discovery_interval = 120  # seconds
+heartbeat_interval = 60   # seconds
+```
+
+## Command Line Usage
+
+### DDNS Server
+```bash
+# Start with MySQL backend
+python qwde_mysql_ddns.py --server
+
+# Start with SQLite backend (fallback)
+python qwde_mysql_ddns.py --server --use-sqlite
+
+# Create default config file
+python qwde_mysql_ddns.py --create-config
+```
+
+### Browser Client
+```bash
+# Connect to default server
+python qwde_browser_launcher.py
+
+# Connect to specific server
+python qwde_browser_launcher.py --ddns-host secupgrade.com --ddns-port 8765
+
+# Disable auto-sync (faster startup)
+python qwde_browser_launcher.py --no-auto-sync
+
+# Custom peer port
+python qwde_browser_launcher.py --peer-port 8766
+```
+
+### Protocol CLI
+```bash
+# Create a site
+python qwde_protocol.py --create mysite "Hello World"
+
+# Get site content
+python qwde_protocol.py --get mysite
+
+# Resolve URL
+python qwde_protocol.py --resolve qwde://mysite
+
+# Show stats
+python qwde_protocol.py --stats
+
+# Start peer with GUI
+python qwde_protocol.py --peer
+
+# Start DDNS server
+python qwde_protocol.py --server
+```
+
+## Troubleshooting
+
+### Connection Issues
+
+**Problem:** Cannot connect to DDNS server
+```
+Solution:
+1. Check if DDNS server is running
+2. Verify firewall allows port 8765 (UDP)
+3. Check qwde_config.ini has correct host/port
+4. Test: python qwde_protocol.py --stats
+```
+
+**Problem:** Auto-sync fails
+```
+Solution:
+1. Check network connectivity to DDNS server
+2. Verify MySQL database is accessible
+3. Check logs for specific error messages
+4. Try with --no-auto-sync for faster startup
+```
+
+### MySQL Issues
+
+**Problem:** MySQL connection failed
+```
+Solution:
+1. Verify MySQL is running: mysql -u qwde_user -p
+2. Check database exists: SHOW DATABASES LIKE 'qwde_ddns';
+3. Verify user permissions: SHOW GRANTS FOR 'qwde_user'@'%';
+4. Check firewall allows port 3306
+```
+
+**Problem:** Using SQLite fallback
+```
+Solution:
+1. Install mysql-connector-python: pip install mysql-connector-python
+2. Verify import: python -c "import mysql.connector"
+3. Check qwde_config.ini: use_sqlite = False
+```
+
+### Build Issues
+
+**Problem:** PyInstaller build fails
+```
+Solution:
+1. Update PyInstaller: pip install --upgrade pyinstaller
+2. Clean build: pyinstaller --clean <spec file>
+3. Check for missing imports in hiddenimports
+4. Run with --debug for detailed output
+```
+
+## Network Architecture
+
+```
+                    ┌─────────────────────┐
+                    │  secupgrade.com     │
+                    │  Central DDNS       │
+                    │  (MySQL Database)   │
+                    │  Port: 8765         │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+        ┌─────▼─────┐   ┌─────▼─────┐   ┌─────▼─────┐
+        │  Peer 1   │   │  Peer 2   │   │  Peer 3   │
+        │  (Sites)  │   │  (Sites)  │   │  (Sites)  │
+        └─────┬─────┘   └─────┬─────┘   └─────┬─────┘
+              │               │               │
+              └───────────────┼───────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   New Client      │
+                    │   Auto-downloads: │
+                    │   1. From DDNS    │
+                    │   2. From Peers   │
+                    └───────────────────┘
+```
+
+## Security Considerations
+
+1. **MySQL Security:**
+   - Use strong passwords
+   - Restrict database user permissions
+   - Enable MySQL SSL connections
+   - Use firewall rules to limit access
+
+2. **Network Security:**
+   - All peer communications use RSA + AES encryption
+   - Seeded rolling encryption for message privacy
+   - Signature verification for handshakes
+
+3. **Server Security:**
+   - Run DDNS server with limited privileges
+   - Use firewall to restrict port access
+   - Monitor server logs for suspicious activity
+
+## Performance Tuning
+
+### For Large Deployments
+
+1. **MySQL Optimization:**
+   ```sql
+   ALTER TABLE sites ADD INDEX idx_domain (domain);
+   ALTER TABLE peers ADD INDEX idx_last_seen (last_seen);
+   ```
+
+2. **Server Settings:**
+   ```ini
+   [peer]
+   max_connections = 16  # Increase for more peers
+   discovery_interval = 60  # Faster discovery
+   ```
+
+3. **Client Settings:**
+   ```ini
+   [peer]
+   max_connections = 8  # Balance between performance and resources
+   ```
+
+## Version Information
+
+- **Protocol Version:** 1.0.0
+- **Database Schema:** MySQL 8.0+ / SQLite 3.0+
+- **Python Version:** 3.8+
+- **Last Updated:** 2026
+
+## Support
+
+For issues and questions:
+1. Check this guide first
+2. Review README.md for API documentation
+3. Check console logs for error messages
+4. Verify configuration in qwde_config.ini
